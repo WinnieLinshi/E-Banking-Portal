@@ -52,6 +52,7 @@ This is a simple e-Banking Portal that implements a reusable REST API for return
 [![Java][Java]][Java-url]
 [![Kafka][Kafka]][Kafka-url]
 [![Spring boot][Spring boot]][Spring boot-url]
+[![K8s][K8s]][K8s-url]
 
 <p align="right"><a href="#readme-top"><img src="images/back.png" alt="back" width="40" height="40"></a></p>
 
@@ -61,14 +62,15 @@ This is a simple e-Banking Portal that implements a reusable REST API for return
 ## :gear:Getting Started
 
 There are many ways on setting up this project locally, but the easiest and most recommended way is to use a docker container!
-To get a local copy up and running follow these simple steps.
+To get a local copy up and running follow these simple steps. :trollface:
 
+Of course, you can also choose not to use docker, run the code directly in intellij, and then modify the part you want to change
 ### Prerequisites
-1. First, you must have desktop docker.
-[Download docker](https://www.docker.com/) to open this project in docker container.
 
+<details><summary>:electron:if you want to use a docker container</summary>
+
+1. First, you must have [desktop docker.](https://www.docker.com/)
 2. Second, download the [docker-compose.yaml](https://github.com/WinnieLinshi/E-Banking-Portal/blob/master/docker-compose.yaml) file of this project.
-
 3. Once the download finished, execute the following commands in the same path of this file to pull docker image and run it.
 
   ```bash
@@ -76,7 +78,17 @@ To get a local copy up and running follow these simple steps.
   ```
 
 Until those 3 container zookeeper, kafka, demo are all Running, you can go to http://localhost:8080/swagger-ui/ see the project running as you can see above.
+</details>
+<details><summary>:atom:	if you want to run the code directly in intellij </summary>
 
+1. First you have to have [intellij.](https://www.jetbrains.com/idea/download/#section=windows)
+2. [Set up kafka zookeeper & kafka server](https://kafka.apache.org/quickstart) stop after step2.
+3. pull [this project](https://github.com/WinnieLinshi/E-Banking-Portal) to your local repository.
+4. run [DemoApplication.java](https://github.com/WinnieLinshi/E-Banking-Portal/blob/master/src/main/java/com/winnie/demo/DemoApplication.java) in IDE.
+
+</details>
+
+**or you can use [the demo](http://34.72.139.232:60000/swagger-ui/#/) :triangular_flag_on_post: directly**
 
 <!-- USAGE EXAMPLES -->
 ## :nut_and_bolt:Usage
@@ -93,18 +105,20 @@ By authorizing you can use other APIs!
 This is a simple Kafka producer function.
 Request format specification:
 
-    {
-        "amount": number not null
-        "currency": 3 uppercase English letters, that follows [ISO 4217](https://zh.wikipedia.org/wiki/ISO_4217) : Specification for currency and funding code tables, e.g.,"TWD".
-        "date": YYYYMMDD, e.g., "20220922"
-        "description": no more than 20 letters, e.g.,"Online payment CHF".
-        "iban":  no more than 26 letters, e.g.,"CH93-0000-0000-0000-0000-0".
-        "id": no more than 40 letters, e.g.,"89d3o179-abcd-465b-o9ee-e2d5f6ofEld46".And id must not be repeated with the previously sent request input!
-    }
-
+```json
+{
+    "amount": number not null
+    "currency": 3 uppercase English letters, that follows [ISO 4217](https://zh.wikipedia.org/wiki/ISO_4217) : Specification for currency and funding code tables, e.g.,"TWD".
+    "date": YYYYMMDD, e.g., "20220922"
+    "description": no more than 20 letters, e.g.,"Online payment CHF".
+    "iban":  no more than 26 letters, e.g.,"CH93-0000-0000-0000-0000-0".
+    "id": no more than 40 letters, e.g.,"89d3o179-abcd-465b-o9ee-e2d5f6ofEld46".And id must not be repeated with the previously sent request input!
+}
+```
 The request data will be consumed by kafka of the original service and written to the database.
 
 Response: The content of the message successfully sent to kafka
+
 If Http-code is not 200, it means there are errors in formats, permissions, repetitions, etc.
 
 </details>
@@ -112,13 +126,13 @@ If Http-code is not 200, it means there are errors in formats, permissions, repe
 <details>
 <summary>transaction-controller GET:key: /transaction/{iban}/page={pageNo}&pageSize={pageSize}</summary>
 The api that allows the logged in person to view his own account transaction records in the past year.
-winnie has 3 accounts: CH93-0000-0000-0000-0000-0, CH93-0000-0000-0000-0000-1, CH93-0000-0000-0000-0000-2
-lily has 2:CH93-0000-0000-0000-0000-3, CH93-0000-0000-0000-0000-4
 
-Winnie, who is logged-on in the portal, can only check her own account transaction information.
+So, Winnie, who is logged-on in the portal, can only check her own account transaction information.
 
 Response: The query results are sorted from new to old, total credit and debit are converted using the exchange rate on the day of the transaction, and the amount converted is in euros.
+
 If Http-code is not 200, it means there are errors in formats, permissions, etc.
+
 </details>
 
 <details>
@@ -127,10 +141,34 @@ If Http-code is not 200, it means there are errors in formats, permissions, etc.
 Directly adding transaction data here does not pass through the production and consumption of kafka
 Request format specification is the same as SendKafka above.
 
+
 Response: The content of the message successfully added to DB
+
 If Http-code is not 200, it means there are errors in formats, permissions, repetitions, etc.
 </details>
 
+<!-- TABLE SCHEMA -->
+## :octocat: Table Schema
+**These are the initial data for this project**
+
+#### TRANSACTION
+| ID:old_key:           | CURRENCY     | IBAN         | DATE     | DESCRIPTION  | AMOUNT |
+|--------------|--------------|--------------|----------|--------------|-------|
+| 89d3o179-abcd-465b-o9ee-e2d5f6ofEld46 | CHF  | CH93-0000-0000-0000-0000-0 | 20220921 | Online payment CHF | 75    |
+
+#### ACCOUNT
+ USER_ID:old_key: | IBAN  :old_key:           |
+---------|---------------------------|
+| winnie  | CH93-0000-0000-0000-0000-0 |
+| winnie  | CH93-0000-0000-0000-0000-1 |
+| winnie  | CH93-0000-0000-0000-0000-2 |
+| lily    | CH93-0000-0000-0000-0000-3 |
+| lily  | CH93-0000-0000-0000-0000- |
+
+#### USER
+USER_ID:old_key: | PASSWORD |
+---------|----------|
+| winnie  | password |
 <!-- CONTACT -->
 ## :iphone:	Contact
 
@@ -149,3 +187,5 @@ If Http-code is not 200, it means there are errors in formats, permissions, repe
 [Spring boot-url]: https://spring.io/
 [Java]: https://miro.medium.com/max/1400/1*vFiGOTV1S8yz0RTIQteTjw.png
 [Java-url]: https://start.spring.io/
+[K8s]: images/SpringBoot-K8s-diagram.png
+[K8s-url]: https://cloud.google.com/
